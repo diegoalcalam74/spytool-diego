@@ -1,0 +1,7 @@
+streamlit
+google-generativeai
+apify-client
+python-docx
+gTTS
+Pillow
+requests
