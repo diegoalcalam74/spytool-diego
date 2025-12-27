@@ -13,7 +13,12 @@ from google.api_core.exceptions import ResourceExhausted, NotFound
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 # --- CONFIGURACIÓN VISUAL ---
-st.set_page_config(page_title="SpyTool Pro: Empire Builder 🏰", layout="wide")
+st.set_page_config(page_title="SpyTool Pro: Global Edition 🌎", layout="wide")
+
+# --- GESTIÓN DE SECRETOS (AUTOMÁTICA) ---
+# Intenta buscar las claves en la caja fuerte (Secrets)
+api_key_google = st.secrets.get("GOOGLE_API_KEY", None)
+api_key_apify = st.secrets.get("APIFY_API_TOKEN", None)
 
 # --- BLINDAJE ---
 SAFETY_SETTINGS = {
@@ -54,6 +59,7 @@ def texto_a_audio(texto, idioma='es'):
     except: return None
 
 def consultar_gemini_robusto(prompt, api_key, model_name_principal, lista_modelos_disponibles, stream=False):
+    if not api_key: return None
     genai.configure(api_key=api_key)
     try:
         model = genai.GenerativeModel(model_name_principal)
@@ -79,49 +85,71 @@ def consultar_gemini_robusto(prompt, api_key, model_name_principal, lista_modelo
 if 'borrador_libro' not in st.session_state: st.session_state['borrador_libro'] = []
 if 'mis_modelos' not in st.session_state: st.session_state['mis_modelos'] = []
 
-# --- BARRA LATERAL ---
+# --- BARRA LATERAL (AUTOMATIZADA) ---
 with st.sidebar:
     st.header("⚙️ Configuración")
-    api_key_google = st.text_input("1. Google API Key:", type="password")
-    modelo_seleccionado = "models/gemini-3-flash-preview"
+    
+    if not api_key_google:
+        api_key_google = st.text_input("1. Google API Key:", type="password")
+        st.warning("⚠️ Clave no detectada en Secrets. Úsala manual.")
+    else:
+        st.success("✅ Google Key: Conectada (Secrets)")
+        
+    modelo_seleccionado = "models/gemini-1.5-flash" 
+    
     if api_key_google:
         try:
             genai.configure(api_key=api_key_google)
-            lista_reales = []
-            for m in genai.list_models():
-                if 'generateContent' in m.supported_generation_methods:
-                    lista_reales.append(m.name)
-            st.session_state['mis_modelos'] = lista_reales
+            try:
+                lista_reales = []
+                for m in genai.list_models():
+                    if 'generateContent' in m.supported_generation_methods:
+                        lista_reales.append(m.name)
+                st.session_state['mis_modelos'] = lista_reales
+            except:
+                lista_reales = ["models/gemini-1.5-flash", "models/gemini-pro"]
+
             if lista_reales:
-                st.success(f"✅ {len(lista_reales)} Motores")
                 index_defecto = 0
                 for i, nombre in enumerate(lista_reales):
-                    if "gemini-3-flash" in nombre: index_defecto = i
+                    if "gemini-1.5-flash" in nombre: index_defecto = i
                 modelo_seleccionado = st.selectbox("🤖 Motor Principal:", lista_reales, index=index_defecto)
         except: pass
+    
     st.divider()
-    api_key_apify = st.text_input("2. Apify Token (Opcional):", type="password")
+    
+    if not api_key_apify:
+        api_key_apify = st.text_input("2. Apify Token (Opcional):", type="password")
+    else:
+        st.success("✅ Apify Token: Conectado (Secrets)")
+        
     st.divider()
     if len(st.session_state['borrador_libro']) > 0:
         if st.button("🗑️ Reiniciar Libro"):
             st.session_state['borrador_libro'] = []
             st.rerun()
 
-# --- INTERFAZ ---
-st.title("🏰 SpyTool Pro: Empire Builder")
+# --- INTERFAZ PRINCIPAL ---
+st.title("🏰 SpyTool Pro: Global Edition 🌎")
+
+if not api_key_google:
+    st.info("👋 ¡Hola! Para empezar, configura tus llaves en los 'Secrets' de Streamlit o ingrésalas en la barra lateral.")
+    st.stop()
 
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["📡 Radar", "🏭 Fábrica", "🎨 Portada Pro", "📢 Marketing", "🌐 Landing Page", "🎧 Extras", "🌪️ Embudo"])
 
-# PESTAÑA 1: RADAR
+# PESTAÑA 1: RADAR (AHORA CON BRASIL)
 with tab1:
     st.header("Investigación")
     modo = st.radio("Modo:", ["🤖 Automático", "✍️ Manual"], horizontal=True)
     if modo == "🤖 Automático":
         c1, c2 = st.columns(2)
         with c1: keyword = st.text_input("Nicho:", value="Yoga")
-        with c2: pais = st.selectbox("País:", ["US", "ES", "MX"])
+        with c2: 
+            # ¡AQUÍ ESTÁ BRASIL AGREGADO!
+            pais = st.selectbox("País:", ["US", "ES", "MX", "BR"]) 
         if st.button("🚀 Buscar"):
-            if not api_key_apify: st.error("Falta Token")
+            if not api_key_apify: st.error("Falta Token Apify.")
             else:
                 try:
                     client = ApifyClient(api_key_apify)
@@ -186,12 +214,10 @@ with tab3:
     t_l = st.text_input("Título Libro:", placeholder="DOMINA TU MENTE")
     st_l = st.selectbox("Estilo:", ["Cinemática 3D", "Grabado de Lujo", "Neón Cyberpunk", "Minimalista Editorial"])
     if st.button("🧠 Crear Prompt Maestro"):
-        if not api_key_google: st.error("Falta llave")
-        else:
-            with st.spinner("Creando prompt..."):
-                prompt_base = f"Actúa como Prompt Engineer para Ideogram AI. Libro: '{st.session_state.get('tema','')}'. Título: '{t_l}'. Estilo: {st_l}. Escribe un prompt en INGLÉS detallado para generar la portada con el texto integrado realista."
-                res = consultar_gemini_robusto(prompt_base, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
-                if res: st.code(res, language="text"); st.success("Copia y pega en Ideogram.ai")
+        with st.spinner("Creando prompt..."):
+            prompt_base = f"Actúa como Prompt Engineer para Ideogram AI. Libro: '{st.session_state.get('tema','')}'. Título: '{t_l}'. Estilo: {st_l}. Escribe un prompt en INGLÉS detallado para generar la portada con el texto integrado realista."
+            res = consultar_gemini_robusto(prompt_base, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
+            if res: st.code(res, language="text"); st.success("Copia y pega en Ideogram.ai")
 
 # PESTAÑA 4: MARKETING
 with tab4:
@@ -253,58 +279,22 @@ with tab6:
             res = consultar_gemini_robusto(p, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
             if res: st.markdown(res)
 
-# PESTAÑA 7: EMBUDOS (NUEVO)
+# PESTAÑA 7: EMBUDOS
 with tab7:
-    st.header("🌪️ Arquitecto de Embudos (Funnel)")
-    st.info("Diseña la estrategia para aumentar el valor de cada cliente (Order Bump & Upsell).")
-    
+    st.header("🌪️ Arquitecto de Embudos")
     tema_funnel = st.session_state.get('tema', 'Sin tema')
-    
     col_bump, col_upsell = st.columns(2)
-    
     with col_bump:
-        st.subheader("1. Order Bump (Oferta de Caja)")
-        st.markdown("*Producto adicional barato ($7-$19) que se agrega con un clic en el checkout.*")
-        tipo_bump = st.selectbox("Tipo de Bump:", ["Audiobook (El que creamos)", "Checklist/Guía Rápida", "Plantilla"])
-        
-        if st.button("✍️ Redactar Order Bump"):
-            if not api_key_google: st.error("Falta llave")
-            else:
-                prompt_bump = f"""
-                Actúa como experto en Funnels de Hotmart.
-                Producto Principal: "{tema_funnel}".
-                Producto Order Bump: "{tipo_bump}".
-                
-                TAREA: Escribe el texto corto y persuasivo para la cajita del checkout.
-                1. Título Llamativo (Ej: ¡Espera! Agrega esto por solo $9).
-                2. Beneficio Inmediato (Por qué lo necesitan YA).
-                3. Tasa de descuento percibida (Ej: Valorado en $47, hoy $9).
-                
-                Usa formato: **Título**, Descripción.
-                """
-                res_bump = consultar_gemini_robusto(prompt_bump, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
-                if res_bump: st.info(res_bump)
-
+        st.subheader("Order Bump")
+        tipo_bump = st.selectbox("Tipo:", ["Audiobook", "Checklist", "Plantilla"])
+        if st.button("Redactar Bump"):
+            p = f"Texto Order Bump para '{tema_funnel}'. Producto: {tipo_bump}. Título, Beneficio, Descuento."
+            res = consultar_gemini_robusto(p, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
+            if res: st.info(res)
     with col_upsell:
-        st.subheader("2. Upsell (Oferta OTO)")
-        st.markdown("*Oferta mayor ($27-$97) que aparece DESPUÉS de comprar.*")
-        tipo_upsell = st.selectbox("Tipo de Upsell:", ["Masterclass en Video", "Pack de 5 Ebooks", "Comunidad/Soporte VIP"])
-        
-        if st.button("📹 Guion de Ventas Upsell"):
-             if not api_key_google: st.error("Falta llave")
-             else:
-                prompt_upsell = f"""
-                Escribe un Guion de Video de Ventas (VSL) corto para la página de Upsell.
-                Contexto: El cliente ACABA de comprar el libro de "{tema_funnel}".
-                Oferta Upsell: "{tipo_upsell}".
-                
-                ESTRUCTURA DEL GUION:
-                1. Felicitar por la compra (Validación).
-                2. El "Problema" nuevo (El libro es el 'qué', el upsell es el 'cómo rápido').
-                3. La Solución (Presenta el {tipo_upsell}).
-                4. Escasez (Oferta única en esta página).
-                5. CTA (Botón "Sí, agregar a mi orden").
-                """
-                with st.spinner("Escribiendo guion millonario..."):
-                    res_upsell = consultar_gemini_robusto(prompt_upsell, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
-                    if res_upsell: st.markdown(res_upsell)
+        st.subheader("Upsell")
+        tipo_upsell = st.selectbox("Tipo:", ["Masterclass", "Pack 5 Ebooks", "VIP"])
+        if st.button("Guion Upsell"):
+            p = f"Guion VSL Upsell para '{tema_funnel}'. Oferta: {tipo_upsell}. Estructura: Felicitar -> Problema -> Solución -> Escasez."
+            res = consultar_gemini_robusto(p, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
+            if res: st.markdown(res)
