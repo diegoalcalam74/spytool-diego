@@ -13,10 +13,9 @@ from google.api_core.exceptions import ResourceExhausted, NotFound
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 # --- CONFIGURACIÓN VISUAL ---
-st.set_page_config(page_title="SpyTool Pro: Global Edition 🌎", layout="wide")
+st.set_page_config(page_title="SpyTool Pro: Ebook 2.0 Edition 📚", layout="wide")
 
-# --- GESTIÓN DE SECRETOS (AUTOMÁTICA) ---
-# Intenta buscar las claves en la caja fuerte (Secrets)
+# --- GESTIÓN DE SECRETOS ---
 api_key_google = st.secrets.get("GOOGLE_API_KEY", None)
 api_key_apify = st.secrets.get("APIFY_API_TOKEN", None)
 
@@ -40,14 +39,6 @@ def crear_word(titulo_libro, capitulos_guardados):
     doc.save(buffer)
     buffer.seek(0)
     return buffer
-
-def crear_markdown(titulo_libro, capitulos_guardados):
-    texto_completo = f"# {titulo_libro}\n\n"
-    for cap in capitulos_guardados:
-        texto_completo += f"## {cap['titulo']}\n\n"
-        texto_completo += f"{cap['contenido']}\n\n"
-        texto_completo += "---\n\n"
-    return texto_completo
 
 def texto_a_audio(texto, idioma='es'):
     try:
@@ -85,18 +76,16 @@ def consultar_gemini_robusto(prompt, api_key, model_name_principal, lista_modelo
 if 'borrador_libro' not in st.session_state: st.session_state['borrador_libro'] = []
 if 'mis_modelos' not in st.session_state: st.session_state['mis_modelos'] = []
 
-# --- BARRA LATERAL (AUTOMATIZADA) ---
+# --- BARRA LATERAL ---
 with st.sidebar:
     st.header("⚙️ Configuración")
-    
     if not api_key_google:
         api_key_google = st.text_input("1. Google API Key:", type="password")
         st.warning("⚠️ Clave no detectada en Secrets. Úsala manual.")
     else:
-        st.success("✅ Google Key: Conectada (Secrets)")
+        st.success("✅ Google Key: Conectada")
         
     modelo_seleccionado = "models/gemini-1.5-flash" 
-    
     if api_key_google:
         try:
             genai.configure(api_key=api_key_google)
@@ -108,7 +97,6 @@ with st.sidebar:
                 st.session_state['mis_modelos'] = lista_reales
             except:
                 lista_reales = ["models/gemini-1.5-flash", "models/gemini-pro"]
-
             if lista_reales:
                 index_defecto = 0
                 for i, nombre in enumerate(lista_reales):
@@ -117,12 +105,9 @@ with st.sidebar:
         except: pass
     
     st.divider()
+    if not api_key_apify: api_key_apify = st.text_input("2. Apify Token (Opcional):", type="password")
+    else: st.success("✅ Apify Token: Conectado")
     
-    if not api_key_apify:
-        api_key_apify = st.text_input("2. Apify Token (Opcional):", type="password")
-    else:
-        st.success("✅ Apify Token: Conectado (Secrets)")
-        
     st.divider()
     if len(st.session_state['borrador_libro']) > 0:
         if st.button("🗑️ Reiniciar Libro"):
@@ -130,24 +115,22 @@ with st.sidebar:
             st.rerun()
 
 # --- INTERFAZ PRINCIPAL ---
-st.title("🏰 SpyTool Pro: Global Edition 🌎")
+st.title("📚 SpyTool Pro: Ebook 2.0 Factory")
 
 if not api_key_google:
-    st.info("👋 ¡Hola! Para empezar, configura tus llaves en los 'Secrets' de Streamlit o ingrésalas en la barra lateral.")
+    st.info("👋 Configura tus llaves para empezar.")
     st.stop()
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["📡 Radar", "🏭 Fábrica", "🎨 Portada Pro", "📢 Marketing", "🌐 Landing Page", "🎧 Extras", "🌪️ Embudo"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["📡 Radar", "🏭 Fábrica 2.0", "🎨 Portada Pro", "📢 Marketing", "🌐 Landing Page", "🎧 Extras", "🌪️ Embudo"])
 
-# PESTAÑA 1: RADAR (AHORA CON BRASIL)
+# PESTAÑA 1: RADAR (CON BRASIL)
 with tab1:
-    st.header("Investigación")
+    st.header("Investigación de Mercado")
     modo = st.radio("Modo:", ["🤖 Automático", "✍️ Manual"], horizontal=True)
     if modo == "🤖 Automático":
         c1, c2 = st.columns(2)
-        with c1: keyword = st.text_input("Nicho:", value="Yoga")
-        with c2: 
-            # ¡AQUÍ ESTÁ BRASIL AGREGADO!
-            pais = st.selectbox("País:", ["US", "ES", "MX", "BR"]) 
+        with c1: keyword = st.text_input("Nicho:", value="Productividad")
+        with c2: pais = st.selectbox("País:", ["US", "ES", "MX", "BR"]) 
         if st.button("🚀 Buscar"):
             if not api_key_apify: st.error("Falta Token Apify.")
             else:
@@ -158,37 +141,67 @@ with tab1:
                     with st.spinner("Buscando..."):
                         run = client.actor("apify/facebook-ads-scraper").call(run_input=run_input, timeout_secs=60)
                     items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
-                    st.success(f"{len(items)} anuncios.")
+                    st.success(f"{len(items)} anuncios encontrados.")
                     for i, item in enumerate(items):
                         txt = item.get('adBody') or item.get('primaryText') or ""
                         with st.container(border=True):
                             st.text_area("Copy", txt, height=60, key=f"t{i}")
-                            if st.button("🧠 Usar Tema", key=f"b{i}"):
+                            if st.button("🧠 Usar este Concepto", key=f"b{i}"):
                                 st.session_state['tema'] = txt[:800]
-                                st.success("Tema cargado.")
+                                st.success("Concepto cargado a la Fábrica.")
                 except Exception as e: st.error(f"Error: {e}")
     else:
-        tm = st.text_area("Pega anuncio:")
+        tm = st.text_area("Pega tu idea o anuncio ganador:")
         if st.button("Analizar"):
             st.session_state['tema'] = tm[:800]
-            st.success("Tema cargado.")
+            st.success("Concepto cargado.")
 
-# PESTAÑA 2: FÁBRICA
+# PESTAÑA 2: FÁBRICA 2.0 (ACTUALIZADA Y BLINDADA)
 with tab2:
-    st.header("🏭 Escritura")
-    tema = st.session_state.get('tema', 'Sin tema.')
-    st.caption(f"Tema: {tema[:50]}...")
+    st.header("🏭 Fábrica de Contenido 'Actionable'")
+    tema = st.session_state.get('tema', 'Sin tema definido.')
+    st.info(f"📌 Concepto Base: {tema[:100]}...")
+    
     c_m, c_w = st.columns(2)
     with c_m:
-        if st.button("Generar Índice"):
-            res = consultar_gemini_robusto(f"Crea índice ebook: {tema}", api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
+        st.subheader("1. Estructura")
+        if st.button("Generar Índice 'Tool-kit'"):
+            prompt_indice = f"""
+            Actúa como estratega de Info-productos Best-Seller.
+            Crea un índice para un 'Workbook/Ebook Accionable' sobre: {tema}.
+            NO quiero capítulos teóricos aburridos.
+            Quiero títulos atractivos orientados a resultados (Ej: 'Reto Día 1', 'Tu Plan de Acción', 'La Técnica Secreta').
+            Incluye secciones de 'Hoja de Trabajo' y 'Auditoría'.
+            """
+            res = consultar_gemini_robusto(prompt_indice, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
             if res: st.session_state['mapa'] = res
         if 'mapa' in st.session_state: st.markdown(st.session_state['mapa'])
+        
     with c_w:
-        tit_cap = st.text_input("Título Cap:")
-        inst = st.text_area("Instrucciones:")
-        if st.button("Escribir"):
-            prompt = f"Escribe cap '{tit_cap}'. Inst: {inst}. Tema: {tema}. Markdown."
+        st.subheader("2. Redacción Inteligente")
+        tit_cap = st.text_input("Título del Capítulo a escribir:")
+        tipo_contenido = st.selectbox("Tipo de Contenido:", ["Lección + Ejercicio (Workbook)", "Checklist de Acción", "Reto de 24 Horas", "Híbrido (Texto + Video QR)"])
+        inst = st.text_area("Detalles extra:")
+        
+        if st.button("✍️ Escribir Capítulo Pro"):
+            # AQUI ESTA EL BLINDAJE DE CANTIDAD Y ESTILO
+            prompt = f"""
+            Actúa como redactor de Ebooks Best-Seller estilo 2026.
+            Tema: {tema}.
+            Capítulo: '{tit_cap}'.
+            Formato Elegido: '{tipo_contenido}'.
+            
+            REGLAS DE ORO (Ebook 2.0 - LECTURA RÁPIDA):
+            1. CONTROL DE LONGITUD: MÁXIMO 800 palabras. Sé extremadamente conciso. Si puedes decirlo en una frase, no uses un párrafo.
+            2. ESTILO VISUAL: Usa muchas negritas, listas (bullets) y emojis. EVITA MUROS DE TEXTO.
+            3. FORMATO WORKBOOK: Incluye obligatoriamente espacios para rellenar (usa lineas: __________).
+            4. ACCIONABLE: Si es Checklist, usa casillas [ ].
+            5. HÍBRIDO: Incluye un marcador visual que diga: > **[📱 ESCANEA AQUÍ EL QR PARA VER EL VIDEO EXPLICATIVO]**
+            6. VALOR AGREGADO IA: Al final, incluye un recuadro con un "Prompt de ChatGPT" que el lector pueda usar.
+            
+            Instrucciones extra: {inst}.
+            Salida en Markdown estético y limpio.
+            """
             cont = st.empty()
             full = ""
             res = consultar_gemini_robusto(prompt, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'], stream=True)
@@ -199,69 +212,64 @@ with tab2:
                     except: pass
                 cont.markdown(full)
                 st.session_state['temp_cap'] = full; st.session_state['temp_tit'] = tit_cap
+                
         if 'temp_cap' in st.session_state:
-            if st.button("💾 Guardar Cap"):
+            if st.button("💾 Guardar en Libro"):
                 st.session_state['borrador_libro'].append({"titulo":st.session_state['temp_tit'], "contenido":st.session_state['temp_cap']})
-                st.success("Guardado.")
+                st.success("Capítulo guardado con éxito.")
                 del st.session_state['temp_cap']
                 st.rerun()
+                
     if len(st.session_state['borrador_libro']) > 0:
-        st.download_button("Descargar Libro", crear_word("Libro", st.session_state['borrador_libro']), "Libro.docx")
+        st.divider()
+        st.download_button("📥 Descargar Ebook Completo (.docx)", crear_word("Mi Best-Seller", st.session_state['borrador_libro']), "Ebook_Accionable.docx")
 
 # PESTAÑA 3: PORTADA PRO
 with tab3:
-    st.header("🎨 Ingeniero de Portadas (Ideogram)")
-    t_l = st.text_input("Título Libro:", placeholder="DOMINA TU MENTE")
-    st_l = st.selectbox("Estilo:", ["Cinemática 3D", "Grabado de Lujo", "Neón Cyberpunk", "Minimalista Editorial"])
-    if st.button("🧠 Crear Prompt Maestro"):
-        with st.spinner("Creando prompt..."):
-            prompt_base = f"Actúa como Prompt Engineer para Ideogram AI. Libro: '{st.session_state.get('tema','')}'. Título: '{t_l}'. Estilo: {st_l}. Escribe un prompt en INGLÉS detallado para generar la portada con el texto integrado realista."
+    st.header("🎨 Portada de Alto Impacto")
+    t_l = st.text_input("Título Libro:", placeholder="El Método 30 Días")
+    st_l = st.selectbox("Estilo Visual:", ["Minimalista 'Apple'", "Bold Typography (Letras Gigantes)", "Estilo Revista Moderna", "3D Abstracto"])
+    if st.button("🧠 Crear Prompt Ideogram"):
+        with st.spinner("Diseñando concepto..."):
+            prompt_base = f"Prompt para Ideogram AI. Ebook Cover design. Title: '{t_l}'. Style: {st_l}. Concept: '{tema}'. High contrast, professional, bestseller aesthetic. NO cluttered text. Big bold fonts. Clean layout."
             res = consultar_gemini_robusto(prompt_base, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
-            if res: st.code(res, language="text"); st.success("Copia y pega en Ideogram.ai")
+            if res: st.code(res, language="text"); st.success("Copia esto en Ideogram.ai")
 
 # PESTAÑA 4: MARKETING
 with tab4:
-    st.header("📢 Marketing Suite")
+    st.header("📢 Marketing & Ventas")
     tema_marketing = st.session_state.get('tema', 'Sin tema')
-    tab_copy, tab_visual = st.tabs(["✍️ Copywriting", "🎨 Creativos Visuales"])
+    tab_copy, tab_visual = st.tabs(["✍️ Anuncios", "🎬 Guiones Reels"])
     with tab_copy:
-        if st.button("Generar Copies"):
-            prompt = f"Escribe 3 anuncios Facebook Ads para libro sobre {tema_marketing}. Incluye emojis y CTA. Tono persuasivo."
+        if st.button("Generar Ads"):
+            prompt = f"Escribe 3 Ads para Facebook sobre {tema_marketing}. Enfócate en el 'Dolor' y la 'Solución Rápida' (Low Ticket). Usa emojis y CTA claros."
             res = consultar_gemini_robusto(prompt, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
             if res: st.markdown(res)
     with tab_visual:
-        col_v1, col_v2 = st.columns(2)
-        with col_v1:
-            estilo_ads = st.selectbox("Estilo Imagen Ads:", ["Ilustración Metafórica", "Foto Stock", "UGC"])
-            if st.button("Generar Prompts Visuales"):
-                p = f"3 prompts visuales (Inglés) para Ads de '{tema_marketing}'. Estilo {estilo_ads}. CUMPLE NORMAS FACEBOOK."
-                res = consultar_gemini_robusto(p, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
-                if res: st.markdown(res)
-        with col_v2:
-            if st.button("Escribir Guiones Reels"):
-                p = f"3 Guiones Reels 15s para '{tema_marketing}'. Tabla: Tiempo | Visual | Audio. Gancho fuerte."
-                res = consultar_gemini_robusto(p, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
-                if res: st.markdown(res)
+        if st.button("Guiones Reels"):
+            p = f"3 Guiones Reels 15s para vender '{tema_marketing}'. Estilo: Problema -> Agitación -> Solución (El Ebook). Formato Tabla. Sé directo."
+            res = consultar_gemini_robusto(p, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
+            if res: st.markdown(res)
 
 # PESTAÑA 5: LANDING PAGE
 with tab5:
-    st.header("🌐 Landing Page")
-    prod = st.text_input("Producto:", value="Mi Ebook")
-    prec = st.text_input("Precio:", value="$17")
-    if st.button("🏗️ Construir Web"):
-        prompt_web = f"HTML5 landing page moderna para '{prod}' ({st.session_state.get('tema','')}). Precio {prec}. Con CSS. Bonita, responsive. Solo código HTML puro."
+    st.header("🌐 Landing Page de Conversión")
+    prod = st.text_input("Nombre Producto:", value="Kit de Acción 30 Días")
+    prec = st.text_input("Precio Oferta:", value="$9 USD")
+    if st.button("🏗️ Generar HTML"):
+        prompt_web = f"HTML5 landing page moderna para '{prod}' ({tema}). Precio {prec}. Estilo 'Sales Letter' corta. Fondo blanco, letra negra legible. Botones rojos de compra. Responsive. Solo código HTML puro."
         res = consultar_gemini_robusto(prompt_web, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
         if res:
             clean = res.replace("```html","").replace("```","")
-            st.download_button("Descargar HTML", clean, "landing.html")
+            st.download_button("Descargar HTML", clean, "index.html")
             st.components.v1.html(clean, height=400, scrolling=True)
 
 # PESTAÑA 6: EXTRAS
 with tab6:
-    st.header("🎧 Extras & Legales")
+    st.header("🎧 Producción Audio & Legal")
     col_a, col_l = st.columns(2)
     with col_a:
-        st.subheader("Audiobook")
+        st.subheader("Audiobook (Order Bump)")
         if len(st.session_state['borrador_libro']) > 0:
             titulos = [c['titulo'] for c in st.session_state['borrador_libro']]
             sel = st.selectbox("Capítulo:", titulos)
@@ -272,29 +280,29 @@ with tab6:
                     if ab: st.audio(ab); st.download_button("Descargar MP3", ab, f"{sel}.mp3")
     with col_l:
         st.subheader("Textos Legales")
-        emp = st.text_input("Empresa:")
-        mail = st.text_input("Email:")
-        if st.button("Generar Legales"):
-            p = f"Textos legales HTML (Privacidad, Descargo Responsabilidad, Términos) para {emp} ({mail})."
+        emp = st.text_input("Tu Marca:")
+        mail = st.text_input("Tu Email:")
+        if st.button("Generar"):
+            p = f"Textos legales HTML (Privacidad, Descargo) para {emp} ({mail})."
             res = consultar_gemini_robusto(p, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
             if res: st.markdown(res)
 
 # PESTAÑA 7: EMBUDOS
 with tab7:
-    st.header("🌪️ Arquitecto de Embudos")
+    st.header("🌪️ Estrategia de Embudo")
     tema_funnel = st.session_state.get('tema', 'Sin tema')
     col_bump, col_upsell = st.columns(2)
     with col_bump:
-        st.subheader("Order Bump")
-        tipo_bump = st.selectbox("Tipo:", ["Audiobook", "Checklist", "Plantilla"])
-        if st.button("Redactar Bump"):
-            p = f"Texto Order Bump para '{tema_funnel}'. Producto: {tipo_bump}. Título, Beneficio, Descuento."
+        st.subheader("Order Bump ($7-$19)")
+        tipo_bump = st.selectbox("Idea:", ["Audiobook", "Plantilla Notion", "Pack de Prompts IA"])
+        if st.button("Crear Oferta Bump"):
+            p = f"Texto corto persuasivo para Order Bump: {tipo_bump} relacionado con {tema_funnel}. Precio ridículo, valor alto. Usa formato Título + Beneficio."
             res = consultar_gemini_robusto(p, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
             if res: st.info(res)
     with col_upsell:
-        st.subheader("Upsell")
-        tipo_upsell = st.selectbox("Tipo:", ["Masterclass", "Pack 5 Ebooks", "VIP"])
-        if st.button("Guion Upsell"):
-            p = f"Guion VSL Upsell para '{tema_funnel}'. Oferta: {tipo_upsell}. Estructura: Felicitar -> Problema -> Solución -> Escasez."
+        st.subheader("Upsell ($27+)")
+        tipo_upsell = st.selectbox("Idea:", ["Masterclass Video", "Asesoría Grupal", "Comunidad VIP"])
+        if st.button("Guion VSL Upsell"):
+            p = f"Guion video ventas para Upsell: {tipo_upsell}. Cliente ya compró el ebook. Ahora véndele aceleración. Sé agresivo con la escasez."
             res = consultar_gemini_robusto(p, api_key_google, modelo_seleccionado, st.session_state['mis_modelos'])
             if res: st.markdown(res)
