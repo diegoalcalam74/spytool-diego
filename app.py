@@ -69,7 +69,8 @@ with st.sidebar:
     st.markdown("---")
     
     # Modelos Gemini disponibles
-    mis_modelos = ["gemini-pro", "gemini-1.5-flash", "gemini-1.5-pro"]
+   # Usamos "gemini-pro" al principio porque NUNCA falla
+    mis_modelos = ["gemini-pro", "gemini-1.5-flash", "gemini-1.0-pro"]
     modelo_seleccionado = st.selectbox("🧠 Modelo Cerebral:", mis_modelos, index=0)
     
     st.info(f"Modo actual: {modelo_seleccionado}")
@@ -456,4 +457,5 @@ with tab6:
             if res:
                 st.markdown(res)
                 st.download_button("📥 Descargar Contenido Upsell", res, "contenido_upsell.txt")
+
 
