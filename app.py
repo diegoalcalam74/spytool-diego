@@ -94,9 +94,11 @@ with tab1:
                         st.session_state['resultados_radar'] = res
                         st.success(f"{len(res)} anuncios encontrados.")
                         
-                        # Analizar automáticamente
+                        # Analizar automáticamente con comillas triples seguras
                         txt = "\n".join(res[:3])
-                        p = f"""Analiza estos anuncios de '{keyword}':\n{txt}\nExtrae JSON: {{'dolor': '', 'promesa': '', 'avatar': ''}}"""
+                        p = f"""Analiza estos anuncios de '{keyword}':
+                        {txt}
+                        Extrae JSON: {{'dolor': '', 'promesa': '', 'avatar': ''}}"""
                         analisis = consultar_gemini(p, api_key_google, modelo_actual)
                         try:
                             d = json.loads(analisis.replace("```json","").replace("```",""))
@@ -122,14 +124,18 @@ with tab2:
     st.write(f"Tema: **{st.session_state['tema']}**")
     
     if st.button("1. Generar Índice"):
-        p = f"""Crea un índice de 5 capítulos para un ebook sobre '{st.session_state['tema']}' dirigido a '{st.session_state['publico']}'."""
+        # USAMOS COMILLAS TRIPLES PARA EVITAR ERRORES
+        p = f"""Crea un índice de 5 capítulos para un ebook sobre '{st.session_state['tema']}' 
+        dirigido a '{st.session_state['publico']}'. Solo titulos."""
         st.session_state['indice'] = consultar_gemini(p, api_key_google, modelo_actual)
         st.rerun()
         
     if st.session_state['indice']:
         st.text_area("Índice:", value=st.session_state['indice'])
         if st.button("2. Escribir Libro"):
-            p = f"""Escribe el contenido completo del ebook basado en:\n{st.session_state['indice']}\nTema: {st.session_state['tema']}."""
+            p = f"""Escribe el contenido completo del ebook basado en:
+            {st.session_state['indice']}
+            Tema: {st.session_state['tema']}."""
             with st.spinner("Escribiendo..."):
                 st.markdown(consultar_gemini(p, api_key_google, modelo_actual))
 
@@ -138,7 +144,8 @@ with tab3:
     st.markdown('<div class="header-style">🎨 Portada</div>', unsafe_allow_html=True)
     estilo = st.selectbox("Estilo:", ["Minimalista", "3D", "Fotorealista"])
     if st.button("Generar Prompt Imagen"):
-        p = f"""Describe un prompt en inglés para generar una portada de ebook sobre '{st.session_state['tema']}' estilo {estilo}."""
+        p = f"""Describe un prompt en inglés para generar una portada de ebook 
+        sobre '{st.session_state['tema']}' estilo {estilo}."""
         st.code(consultar_gemini(p, api_key_google, modelo_actual))
 
 # 4. MARKETING
@@ -149,11 +156,13 @@ with tab4:
         p = f"""Escribe un {tipo} persuasivo para vender el ebook '{st.session_state['tema']}'."""
         st.markdown(consultar_gemini(p, api_key_google, modelo_actual))
 
-# 5. LANDING (Aquí estaba el error, ya corregido con triples comillas)
+# 5. LANDING (EL ERROR ESTABA AQUÍ, YA CORREGIDO CON TRIPLES COMILLAS)
 with tab5:
     st.markdown('<div class="header-style">🌐 Landing Page</div>', unsafe_allow_html=True)
     if st.button("Crear Web"):
-        prompt = f"""Escribe el código HTML5 completo con CSS integrado moderno para una Landing Page que venda un producto sobre '{st.session_state['tema']}'. Incluye Hero, Beneficios y CTA."""
+        prompt = f"""Escribe el código HTML5 completo con CSS integrado moderno 
+        para una Landing Page que venda un producto sobre '{st.session_state['tema']}'. 
+        Incluye Hero, Beneficios y CTA."""
         st.code(consultar_gemini(prompt, api_key_google, modelo_actual), language="html")
 
 # 6. MONETIZACIÓN
@@ -161,5 +170,6 @@ with tab6:
     st.markdown('<div class="header-style">💰 Monetización</div>', unsafe_allow_html=True)
     tipo = st.radio("Crear:", ["Order Bump", "Upsell"])
     if st.button("Generar Producto Extra"):
-        p = f"""Crea el contenido para un {tipo} sobre '{st.session_state['tema']}'. Hazlo práctico y directo."""
+        p = f"""Crea el contenido para un {tipo} sobre '{st.session_state['tema']}'. 
+        Hazlo práctico y directo."""
         st.markdown(consultar_gemini(p, api_key_google, modelo_actual))
